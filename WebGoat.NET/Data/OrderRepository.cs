@@ -35,7 +35,8 @@ namespace WebGoatCore.Data
             // return order.OrderId;
 
             string shippedDate = order.ShippedDate.HasValue ? "'" + string.Format("yyyy-MM-dd", order.ShippedDate.Value) + "'" : "NULL";
-            var sql = "INSERT INTO Orders (" +
+            var sql = "INSERT INTO Orders (CustomerId, EmployeeId, OrderDate, RequiredDate, ShippedDate, ShipVia, Freight, ShipName, ShipAddress, ShipCity, ShipRegion, ShipPostalCode, ShipCountry) VALUES (@CustomerId, @EmployeeId, @OrderDate, @RequiredDate, @ShippedDate, @ShipVia, @Freight, @ShipName, @ShipAddress, @ShipCity, @ShipRegion, @ShipPostalCode, @ShipCountry)";
+            sql += ";\nSELECT OrderID FROM Orders ORDER BY OrderID DESC LIMIT 1;";
                 "CustomerId, EmployeeId, OrderDate, RequiredDate, ShippedDate, ShipVia, Freight, ShipName, ShipAddress, " +
                 "ShipCity, ShipRegion, ShipPostalCode, ShipCountry" +
                 ") VALUES (" +
@@ -46,6 +47,19 @@ namespace WebGoatCore.Data
 
             using (var command = _context.Database.GetDbConnection().CreateCommand())
             {
+                command.Parameters.AddWithValue("@CustomerId", order.CustomerId);
+                command.Parameters.AddWithValue("@EmployeeId", order.EmployeeId);
+                command.Parameters.AddWithValue("@OrderDate", order.OrderDate.ToString("yyyy-MM-dd"));
+                command.Parameters.AddWithValue("@RequiredDate", order.RequiredDate.ToString("yyyy-MM-dd"));
+                command.Parameters.AddWithValue("@ShippedDate", order.ShippedDate.HasValue ? order.ShippedDate.Value.ToString("yyyy-MM-dd") : (object)DBNull.Value);
+                command.Parameters.AddWithValue("@ShipVia", order.ShipVia);
+                command.Parameters.AddWithValue("@Freight", order.Freight);
+                command.Parameters.AddWithValue("@ShipName", order.ShipName);
+                command.Parameters.AddWithValue("@ShipAddress", order.ShipAddress);
+                command.Parameters.AddWithValue("@ShipCity", order.ShipCity);
+                command.Parameters.AddWithValue("@ShipRegion", order.ShipRegion);
+                command.Parameters.AddWithValue("@ShipPostalCode", order.ShipPostalCode);
+                command.Parameters.AddWithValue("@ShipCountry", order.ShipCountry);
                 command.CommandText = sql;
                 _context.Database.OpenConnection();
 
@@ -59,8 +73,30 @@ namespace WebGoatCore.Data
                 ") VALUES ";
             foreach (var (orderDetails, i) in order.OrderDetails.WithIndex())
             {
-                orderDetails.OrderId = order.OrderId;
-                sql += (i > 0 ? "," : "") +
+                sql += (i > 0 ? "," : "") + "(@OrderId, @ProductId" + i + ", @UnitPrice" + i + ", @Quantity" + i + ", @Discount" + i + ")";
+            }
+            if (order.Shipment != null)
+            {
+                var shipment = order.Shipment;
+                shipment.OrderId = order.OrderId;
+                sql += ";\nINSERT INTO Shipments (OrderId, ShipperId, ShipmentDate, TrackingNumber) VALUES (@OrderId, @ShipperId, @ShipmentDate, @TrackingNumber)";
+            }
+            using (var command = _context.Database.GetDbConnection().CreateCommand())
+            {
+                command.Parameters.AddWithValue("@OrderId", order.OrderId);
+                for (int i = 0; i < order.OrderDetails.Count; i++)
+                {
+                    command.Parameters.AddWithValue("@ProductId" + i, order.OrderDetails[i].ProductId);
+                    command.Parameters.AddWithValue("@UnitPrice" + i, order.OrderDetails[i].UnitPrice);
+                    command.Parameters.AddWithValue("@Quantity" + i, order.OrderDetails[i].Quantity);
+                    command.Parameters.AddWithValue("@Discount" + i, order.OrderDetails[i].Discount);
+                }
+                if (order.Shipment != null)
+                {
+                    command.Parameters.AddWithValue("@ShipperId", order.Shipment.ShipperId);
+                    command.Parameters.AddWithValue("@ShipmentDate", order.Shipment.ShipmentDate.ToString("yyyy-MM-dd"));
+                    command.Parameters.AddWithValue("@TrackingNumber", order.Shipment.TrackingNumber);
+                }
                     $"('{orderDetails.OrderId}','{orderDetails.ProductId}','{orderDetails.UnitPrice}','{orderDetails.Quantity}'," +
                     $"'{orderDetails.Discount}')";
             }
