@@ -37,7 +37,7 @@ namespace WebGoatCore.Data
             string shippedDate = order.ShippedDate.HasValue ? "'" + string.Format("yyyy-MM-dd", order.ShippedDate.Value) + "'" : "NULL";
             var sql = "INSERT INTO Orders (" +
                 "CustomerId, EmployeeId, OrderDate, RequiredDate, ShippedDate, ShipVia, Freight, ShipName, ShipAddress, " +
-                "ShipCity, ShipRegion, ShipPostalCode, ShipCountry" +
+                "ShipCity, ShipRegion, ShipPostalCode, ShipCountry) VALUES (@CustomerId, @EmployeeId, @OrderDate, @RequiredDate, @ShippedDate, @ShipVia, @Freight, @ShipName, @ShipAddress, @ShipCity, @ShipRegion, @ShipPostalCode, @ShipCountry)";
                 ") VALUES (" +
                 $"'{order.CustomerId}','{order.EmployeeId}','{order.OrderDate:yyyy-MM-dd}','{order.RequiredDate:yyyy-MM-dd}'," +
                 $"{shippedDate},'{order.ShipVia}','{order.Freight}','{order.ShipName}','{order.ShipAddress}'," +
@@ -47,6 +47,19 @@ namespace WebGoatCore.Data
             using (var command = _context.Database.GetDbConnection().CreateCommand())
             {
                 command.CommandText = sql;
+                command.Parameters.AddWithValue("@CustomerId", order.CustomerId);
+                command.Parameters.AddWithValue("@EmployeeId", order.EmployeeId);
+                command.Parameters.AddWithValue("@OrderDate", order.OrderDate.ToString("yyyy-MM-dd"));
+                command.Parameters.AddWithValue("@RequiredDate", order.RequiredDate.ToString("yyyy-MM-dd"));
+                command.Parameters.AddWithValue("@ShippedDate", shippedDate);
+                command.Parameters.AddWithValue("@ShipVia", order.ShipVia);
+                command.Parameters.AddWithValue("@Freight", order.Freight);
+                command.Parameters.AddWithValue("@ShipName", order.ShipName);
+                command.Parameters.AddWithValue("@ShipAddress", order.ShipAddress);
+                command.Parameters.AddWithValue("@ShipCity", order.ShipCity);
+                command.Parameters.AddWithValue("@ShipRegion", order.ShipRegion);
+                command.Parameters.AddWithValue("@ShipPostalCode", order.ShipPostalCode);
+                command.Parameters.AddWithValue("@ShipCountry", order.ShipCountry);
                 _context.Database.OpenConnection();
 
                 using var dataReader = command.ExecuteReader();
