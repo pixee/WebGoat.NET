@@ -25,3 +25,4 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: windows-artifact
+        path: "D:\\a\\WebGoat.NET\\WebGoat.NET\\WebGoat.NET\\bin\\Debug\\net8.0"
