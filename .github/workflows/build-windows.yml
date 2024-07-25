@@ -21,3 +21,7 @@ jobs:
       run: dotnet restore
     - name: Build
       run: dotnet build --no-restore
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: windows-artifact
